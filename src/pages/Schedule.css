@@ -1,0 +1,135 @@
+/* ── Week nav ────────────────────────────────── */
+.sched-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.sched-nav-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sched-nav-btn:hover { background: #7b44e0; color: #fff; border-color: #7b44e0; }
+
+.sched-week-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a2e;
+  flex: 1;
+  text-align: center;
+}
+
+/* ── Day columns ─────────────────────────────── */
+.sched-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .sched-days { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 700px) {
+  .sched-days { grid-template-columns: repeat(2, 1fr); }
+}
+
+.sched-day {
+  background: #fff;
+  border: 1px solid #e0e0e8;
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 80px;
+}
+
+.sched-day.today { border-color: #7b44e0; }
+
+.sched-day-header {
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid #eee;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.sched-day-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #555;
+}
+
+.today-badge {
+  font-size: 9px;
+  font-weight: 700;
+  background: #7b44e0;
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.sched-no-games {
+  font-size: 11px;
+  color: #ccc;
+  text-align: center;
+  padding: 14px 8px;
+  margin: 0;
+}
+
+/* ── Game card ───────────────────────────────── */
+.sched-game {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.sched-game:last-child { border-bottom: none; }
+
+.sched-team-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.sched-team-row.winner .sched-score { color: #6040c0; font-weight: 800; }
+.sched-team-row.winner .sched-team-abbr { color: #6040c0; }
+
+.sched-team-abbr {
+  font-size: 11px;
+  font-weight: 800;
+  color: #555;
+  width: 26px;
+  flex-shrink: 0;
+}
+
+.sched-team-name {
+  font-size: 10px;
+  color: #888;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sched-score {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  min-width: 22px;
+  text-align: right;
+}
+
+.sched-game-footer {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}

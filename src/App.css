@@ -168,3 +168,58 @@
     border-right-color: var(--border);
   }
 }
+
+/* ── Title button + arrow animation ─────────────── */
+.title-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  outline: none;
+  transition: transform 0.2s;
+}
+
+.title-btn:hover .play-text,
+.title-btn:hover .maker-text {
+  filter: brightness(1.15);
+}
+
+.title-btn.launching {
+  animation: titleLaunch 0.85s ease forwards;
+}
+
+@keyframes titleLaunch {
+  0%   { transform: translateX(0);    opacity: 1; }
+  60%  { transform: translateX(40px); opacity: 0.7; }
+  100% { transform: translateX(80px); opacity: 0; }
+}
+
+.title-arrow-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title-arrow {
+  font-size: 52px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1;
+  display: inline-block;
+  transition: transform 0.2s, color 0.2s;
+}
+
+.title-btn:hover .title-arrow {
+  transform: translateX(6px);
+  color: #fff;
+}
+
+.title-arrow.arrow-go {
+  animation: arrowShoot 0.85s ease forwards;
+}
+
+@keyframes arrowShoot {
+  0%   { transform: translateX(0);     opacity: 1; }
+  40%  { transform: translateX(20px);  opacity: 1; }
+  100% { transform: translateX(100px); opacity: 0; }
+}
