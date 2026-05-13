@@ -1,9 +1,21 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
-import { searchPlayers } from '../services/bdlApi'
+import { searchPlayers } from '../services/backendApi'
 import './Layout.css'
 
 const LOGO_URL = 'https://res.cloudinary.com/dv3eeuy4b/image/upload/v1778557328/LOGO_umlvbk.png'
+
+function playerAvatarUrl(player, size = 64) {
+  if (player?.image_url) return player.image_url
+  const name = encodeURIComponent(`${player?.first_name || ''} ${player?.last_name || ''}`)
+  return `https://ui-avatars.com/api/?name=${name}&background=3d1f6e&color=c4a8ff&bold=true&size=${size}&font-size=0.38`
+}
+
+function handleAvatarError(e, player, size = 64) {
+  e.currentTarget.onerror = null
+  const name = encodeURIComponent(`${player?.first_name || ''} ${player?.last_name || ''}`)
+  e.currentTarget.src = `https://ui-avatars.com/api/?name=${name}&background=3d1f6e&color=c4a8ff&bold=true&size=${size}&font-size=0.38`
+}
 
 export default function Layout({ children }) {
   const navigate = useNavigate()
@@ -100,7 +112,12 @@ export default function Layout({ children }) {
                     onMouseDown={() => handlePlayerClick(p)}
                   >
                     <div className="layout-dd-avatar" style={{padding:0,overflow:'hidden'}}>
-                      <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.first_name+' '+p.last_name)}&background=3d1f6e&color=c4a8ff&bold=true&size=64&font-size=0.38`} alt="" style={{width:'100%',height:'100%',display:'block'}} />
+                      <img
+                        src={playerAvatarUrl(p, 64)}
+                        alt=""
+                        style={{width:'100%',height:'100%',display:'block',objectFit:'cover'}}
+                        onError={e => handleAvatarError(e, p, 64)}
+                      />
                     </div>
                     <div className="layout-dd-info">
                       <span className="layout-dd-name">{p.first_name} {p.last_name}</span>

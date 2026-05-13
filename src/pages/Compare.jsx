@@ -1,7 +1,19 @@
 import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
-import { searchPlayers } from '../services/bdlApi'
+import { searchPlayers } from '../services/backendApi'
 import './Compare.css'
+
+function playerAvatarUrl(player, size = 128) {
+  if (player?.image_url) return player.image_url
+  const name = encodeURIComponent(`${player?.first_name || ''} ${player?.last_name || ''}`)
+  return `https://ui-avatars.com/api/?name=${name}&background=0d1228&color=4d72f0&bold=true&size=${size}&font-size=0.38`
+}
+
+function handleAvatarError(e, player, size = 128) {
+  e.currentTarget.onerror = null
+  const name = encodeURIComponent(`${player?.first_name || ''} ${player?.last_name || ''}`)
+  e.currentTarget.src = `https://ui-avatars.com/api/?name=${name}&background=0d1228&color=4d72f0&bold=true&size=${size}&font-size=0.38`
+}
 
 function PlayerPanel({ label, player, onSelect, onClear }) {
   const [query, setQuery] = useState('')
@@ -54,7 +66,7 @@ function PlayerPanel({ label, player, onSelect, onClear }) {
                 {results.map(p => (
                   <div key={p.id} className="compare-result-item" onMouseDown={() => pick(p)}>
                     <div className="compare-result-avatar">
-                      <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.first_name+' '+p.last_name)}&background=0d1228&color=4d72f0&bold=true&size=64&font-size=0.38`} alt="" />
+                      <img src={playerAvatarUrl(p, 64)} alt="" onError={e => handleAvatarError(e, p, 64)} />
                     </div>
                     <div>
                       <div className="compare-result-name">{p.first_name} {p.last_name}</div>
@@ -70,7 +82,11 @@ function PlayerPanel({ label, player, onSelect, onClear }) {
       ) : (
         <div className="compare-player-card">
           <div className="compare-player-avatar">
-            <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(player.first_name+' '+player.last_name)}&background=0d1228&color=4d72f0&bold=true&size=128&font-size=0.38`} alt={`${player.first_name} ${player.last_name}`} />
+            <img
+              src={playerAvatarUrl(player, 128)}
+              alt={`${player.first_name} ${player.last_name}`}
+              onError={e => handleAvatarError(e, player, 128)}
+            />
           </div>
           <div className="compare-player-name">
             {player.first_name} {player.last_name}
@@ -135,13 +151,17 @@ export default function Compare() {
                 <th className="compare-th compare-th-label">STAT</th>
                 <th className="compare-th">
                   <div className="compare-th-player">
-                    <div className="compare-th-avatar">{playerA.first_name?.[0]}{playerA.last_name?.[0]}</div>
+                    <div className="compare-th-avatar">
+                      <img src={playerAvatarUrl(playerA, 64)} alt="" onError={e => handleAvatarError(e, playerA, 64)} />
+                    </div>
                     {playerA.first_name} {playerA.last_name}
                   </div>
                 </th>
                 <th className="compare-th">
                   <div className="compare-th-player">
-                    <div className="compare-th-avatar compare-th-avatar-b">{playerB.first_name?.[0]}{playerB.last_name?.[0]}</div>
+                    <div className="compare-th-avatar compare-th-avatar-b">
+                      <img src={playerAvatarUrl(playerB, 64)} alt="" onError={e => handleAvatarError(e, playerB, 64)} />
+                    </div>
                     {playerB.first_name} {playerB.last_name}
                   </div>
                 </th>

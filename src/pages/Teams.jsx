@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
-import { getTeams, getTeamGames } from '../services/bdlApi'
+import { getTeams, getTeamGames } from '../services/backendApi'
 import './Teams.css'
 
 const CONF_ORDER = ['East', 'West']

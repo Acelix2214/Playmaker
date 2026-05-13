@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
-import { getRecentGames } from '../services/bdlApi'
+import { getRecentGames } from '../services/backendApi'
 import './Dashboard.css'
 
-// Map BDL abbreviations → NBA CDN team IDs for logo URLs
+// Map NBA team abbreviations → NBA CDN team IDs for logo URLs
 const TEAM_LOGO_IDS = {
   ATL: '1610612737', BOS: '1610612738', BKN: '1610612751', CHA: '1610612766',
   CHI: '1610612741', CLE: '1610612739', DAL: '1610612742', DEN: '1610612743',

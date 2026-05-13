@@ -104,11 +104,6 @@
 .tm-g-date   { font-size: 11px; color: #556080; }
 .tm-g-status { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; color: #445070; text-transform: uppercase; }
 
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-}
-
 .teams-conf-title {
   margin: 0 0 14px;
   font-size: 16px;

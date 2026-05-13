@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Layout from '../components/Layout'
-import { getPlayers } from '../services/bdlApi'
+import { getPlayers } from '../services/backendApi'
 import './Players.css'
 
 const POSITIONS = ['All', 'G', 'F', 'C', 'G-F', 'F-C', 'F-G', 'C-F']
+const PLAYERS_PER_PAGE = 20
 
 const TEAM_LOGO_IDS = {
   ATL:'1610612737',BOS:'1610612738',BKN:'1610612751',CHA:'1610612766',
@@ -18,8 +19,19 @@ const TEAM_LOGO_IDS = {
 }
 
 function playerAvatarUrl(p) {
+  if (p.image_url) return p.image_url
   const name = encodeURIComponent(`${p.first_name} ${p.last_name}`)
   return `https://ui-avatars.com/api/?name=${name}&background=0d1228&color=4d72f0&bold=true&size=128&font-size=0.38`
+}
+
+function fallbackAvatarUrl(p) {
+  const name = encodeURIComponent(`${p.first_name} ${p.last_name}`)
+  return `https://ui-avatars.com/api/?name=${name}&background=0d1228&color=4d72f0&bold=true&size=128&font-size=0.38`
+}
+
+function handleAvatarError(e, p) {
+  e.currentTarget.onerror = null
+  e.currentTarget.src = fallbackAvatarUrl(p)
 }
 
 function TeamBadge({ abbr }) {
@@ -39,7 +51,8 @@ export default function Players() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [nextCursor, setNextCursor] = useState(null)
-  const [prevCursors, setPrevCursors] = useState([])
+  const [page, setPage] = useState(0)
+  const [totalPlayers, setTotalPlayers] = useState(0)
 
   // Debounce search input
   useEffect(() => {
@@ -47,13 +60,15 @@ export default function Players() {
     return () => clearTimeout(t)
   }, [search])
 
-  const fetchPlayers = useCallback((cursor = null) => {
+  const fetchPlayers = useCallback((pageToLoad = 0) => {
     setLoading(true)
     setError(null)
-    getPlayers(debouncedSearch, 24, cursor)
+    getPlayers(debouncedSearch, PLAYERS_PER_PAGE, pageToLoad)
       .then(data => {
         setPlayers(data.data || [])
         setNextCursor(data.meta?.next_cursor || null)
+        setTotalPlayers(data.meta?.total || 0)
+        setPage(pageToLoad)
         setLoading(false)
       })
       .catch(err => {
@@ -63,25 +78,23 @@ export default function Players() {
   }, [debouncedSearch])
 
   useEffect(() => {
-    setPrevCursors([])
-    fetchPlayers(null)
+    fetchPlayers(0)
   }, [fetchPlayers])
 
   function goNext() {
     if (!nextCursor) return
-    setPrevCursors(p => [...p, null]) // store current position placeholder
-    fetchPlayers(nextCursor)
+    fetchPlayers(page + 1)
   }
 
   function goPrev() {
-    const prev = prevCursors[prevCursors.length - 2] ?? null
-    setPrevCursors(p => p.slice(0, -1))
-    fetchPlayers(prev)
+    if (page === 0) return
+    fetchPlayers(page - 1)
   }
 
   const filtered = posFilter === 'All'
     ? players
     : players.filter(p => p.position === posFilter)
+  const prevCursors = { length: page }
 
   return (
     <Layout>
@@ -93,22 +106,24 @@ export default function Players() {
           <span className="pl-bc-cur">Players</span>
         </div>
         <div className="pl-header-row">
-          <h1 className="pl-title">PLAYERS</h1>
-          <span className="pl-season-badge">2025-26 SEASON</span>
+          <div className="pl-header-left">
+            <h1 className="pl-title">PLAYERS</h1>
+            <span className="pl-season-badge">2025-26 SEASON</span>
+          </div>
+          <div className="pl-search">
+            <span className="pl-search-icon">⌕</span>
+            <input
+              type="text"
+              placeholder="Search by name…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
       {/* Controls */}
       <div className="pl-controls">
-        <div className="pl-search">
-          <span className="pl-search-icon">⌕</span>
-          <input
-            type="text"
-            placeholder="Search by name…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
         <div className="pl-pos-filters">
           {POSITIONS.map(pos => (
             <button
@@ -123,7 +138,7 @@ export default function Players() {
       </div>
 
       {/* Status */}
-      {loading && <div className="pl-loading-row">{[...Array(6)].map((_,i)=><div key={i} className="pl-skeleton" />)}</div>}
+      {loading && <div className="pl-loading-row">{[...Array(20)].map((_,i)=><div key={i} className="pl-skeleton" />)}</div>}
       {error && <div className="pl-error">{error}</div>}
 
       {/* Grid */}
@@ -135,7 +150,12 @@ export default function Players() {
               className={`pl-card${highlightId === String(p.id) ? ' highlighted' : ''}`}
             >
               <div className="pl-avatar-wrap">
-                <img src={playerAvatarUrl(p)} alt={`${p.first_name} ${p.last_name}`} className="pl-avatar" />
+                <img
+                  src={playerAvatarUrl(p)}
+                  alt={`${p.first_name} ${p.last_name}`}
+                  className="pl-avatar"
+                  onError={e => handleAvatarError(e, p)}
+                />
                 {p.team?.abbreviation && (
                   <div className="pl-avatar-badge">
                     <TeamBadge abbr={p.team.abbreviation} />

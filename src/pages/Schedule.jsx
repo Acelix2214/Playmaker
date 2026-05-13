@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
-import { getScheduleGames } from '../services/bdlApi'
+import { getScheduleGames } from '../services/backendApi'
 import './Schedule.css'
 
 const TEAM_LOGO_IDS = {
