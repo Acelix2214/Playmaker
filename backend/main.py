@@ -12,6 +12,9 @@ from pathlib import Path
 # Add current directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Import routes
+from routes import games, teams, players, auth
+
 from config import ALLOWED_ORIGINS, LOG_LEVEL
 from cache import cache_manager
 from models import HealthResponse
@@ -19,12 +22,6 @@ from models import HealthResponse
 # Configure logging
 logging.basicConfig(level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
-
-# Import routes
-from routes import games, teams, players
-
-
-@asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup/shutdown"""
     logger.info("🚀 Backend API starting up...")
@@ -48,6 +45,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth.router)
 
 
 # Request timing middleware
