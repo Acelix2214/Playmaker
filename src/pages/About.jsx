@@ -36,7 +36,7 @@ const DEVELOPERS = [
     course: 'BS in Computer Science',
     year: '3rd Year',
     age: '21 y/o',
-    role: 'UI/UX Designer'
+    role: 'Full stack Developer'
   },
   {
     id: 5,

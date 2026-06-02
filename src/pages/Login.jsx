@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { signup, login } from '../services/backendApi'
 import './Login.css'
 
 const LOGO_URL = 'https://res.cloudinary.com/dv3eeuy4b/image/upload/v1778557328/LOGO_umlvbk.png'
@@ -9,31 +10,56 @@ function Login() {
   const [mode, setMode] = useState('login') // 'login' or 'signup'
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value })
     setError('')
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    if (mode === 'signup') {
-      if (!form.name || !form.email || !form.password || !form.confirm) {
-        setError('Please fill in all fields.')
-        return
+    setLoading(true)
+    setError('')
+
+    try {
+      if (mode === 'signup') {
+        // Validation
+        if (!form.name || !form.email || !form.password || !form.confirm) {
+          setError('Please fill in all fields.')
+          setLoading(false)
+          return
+        }
+        if (form.password !== form.confirm) {
+          setError('Passwords do not match.')
+          setLoading(false)
+          return
+        }
+        if (form.password.length < 6) {
+          setError('Password must be at least 6 characters.')
+          setLoading(false)
+          return
+        }
+
+        // Call signup API
+        await signup(form.email, form.name, form.password)
+        navigate('/dashboard')
+      } else {
+        // Validation
+        if (!form.email || !form.password) {
+          setError('Please fill in all fields.')
+          setLoading(false)
+          return
+        }
+
+        // Call login API
+        await login(form.email, form.password)
+        navigate('/dashboard')
       }
-      if (form.password !== form.confirm) {
-        setError('Passwords do not match.')
-        return
-      }
-    } else {
-      if (!form.email || !form.password) {
-        setError('Please fill in all fields.')
-        return
-      }
+    } catch (err) {
+      setError(err.message || 'An error occurred. Please try again.')
+      setLoading(false)
     }
-    // Navigate to dashboard after successful login/signup
-    navigate('/dashboard')
   }
 
   function switchMode(m) {
@@ -68,12 +94,14 @@ function Login() {
             <button
               className={`login-toggle-btn${mode === 'login' ? ' active' : ''}`}
               onClick={() => switchMode('login')}
+              disabled={loading}
             >
               Login
             </button>
             <button
               className={`login-toggle-btn${mode === 'signup' ? ' active' : ''}`}
               onClick={() => switchMode('signup')}
+              disabled={loading}
             >
               Sign Up
             </button>
@@ -100,6 +128,7 @@ function Login() {
                   value={form.name}
                   onChange={handleChange}
                   autoComplete="name"
+                  disabled={loading}
                 />
               </div>
             )}
@@ -113,6 +142,7 @@ function Login() {
                 value={form.email}
                 onChange={handleChange}
                 autoComplete="email"
+                disabled={loading}
               />
             </div>
 
@@ -125,6 +155,7 @@ function Login() {
                 value={form.password}
                 onChange={handleChange}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                disabled={loading}
               />
             </div>
 
@@ -138,14 +169,15 @@ function Login() {
                   value={form.confirm}
                   onChange={handleChange}
                   autoComplete="new-password"
+                  disabled={loading}
                 />
               </div>
             )}
 
             {error && <p className="login-error">{error}</p>}
 
-            <button type="submit" className="login-submit-btn">
-              {mode === 'login' ? 'Sign In' : 'Create Account'}
+            <button type="submit" className="login-submit-btn" disabled={loading}>
+              {loading ? 'Loading...' : (mode === 'login' ? 'Sign In' : 'Create Account')}
               <span className="login-submit-arrow">›</span>
             </button>
           </form>
