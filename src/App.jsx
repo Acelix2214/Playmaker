@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import BballLoader from './components/BballLoader.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Players   from './pages/Players.jsx'
@@ -9,9 +9,15 @@ import Schedule  from './pages/Schedule.jsx'
 import Compare   from './pages/Compare.jsx'
 import Login from './pages/Login.jsx'
 import About     from './pages/About.jsx'
+import { isAuthenticated } from './services/backendApi'
 import './App.css'
 
 const LOGO_URL = 'https://res.cloudinary.com/dv3eeuy4b/image/upload/v1778557328/LOGO_umlvbk.png'
+
+// Protected route component - redirects to login if not authenticated
+function ProtectedRoute({ children }) {
+  return isAuthenticated() ? children : <Navigate to="/login" replace />
+}
 
 function Home() {
   const navigate = useNavigate()
@@ -19,7 +25,13 @@ function Home() {
 
   function handleTitleClick() {
     setLaunching(true)
-    setTimeout(() => navigate('/login'), 900)
+    setTimeout(() => {
+      if (isAuthenticated()) {
+        navigate('/dashboard')
+      } else {
+        navigate('/login')
+      }
+    }, 900)
   }
 
   useEffect(() => {
@@ -166,19 +178,48 @@ function RouteTransition({ children }) {
 }
 
 function App() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [sessionChecked, setSessionChecked] = useState(false)
+
+  // Check for existing session on app load
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        // If user has token and is on login page, redirect to dashboard
+        if (isAuthenticated() && location.pathname === '/login') {
+          navigate('/dashboard', { replace: true })
+        }
+      } catch (err) {
+        console.error('Session check error:', err)
+      } finally {
+        setSessionChecked(true)
+      }
+    }
+
+    checkSession()
+  }, [location.pathname, navigate])
+
+  // Don't render until session is checked
+  if (!sessionChecked) {
+    return <BballLoader />
+  }
+
   return (
     <RouteTransition>
-    <Routes>
-      <Route path="/"          element={<Home />} />
-      <Route path="/about"     element={<About />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/players"   element={<Players />} />
-      <Route path="/players/:playerId" element={<PlayerProfile />} />
-      <Route path="/teams"     element={<Teams />} />
-      <Route path="/schedule"  element={<Schedule />} />
-      <Route path="/compare"   element={<Compare />} />
-      <Route path="/login" element={<Login />} />
-    </Routes>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/login" element={<Login />} />
+        
+        {/* Protected Routes */}
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
+        <Route path="/players/:playerId" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />
+        <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
+        <Route path="/schedule" element={<ProtectedRoute><Schedule /></ProtectedRoute>} />
+        <Route path="/compare" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
+      </Routes>
     </RouteTransition>
   )
 }

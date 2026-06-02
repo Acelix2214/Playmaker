@@ -4,7 +4,7 @@ Authentication routes for login and signup
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
-from datetime import timedelta
+from datetime import timedelta, datetime
 import sys
 from pathlib import Path
 
@@ -17,7 +17,8 @@ from auth_utils import (
     hash_password,
     verify_password,
     create_access_token,
-    ACCESS_TOKEN_EXPIRE_MINUTES
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    verify_token
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -37,6 +38,12 @@ class TokenResponse(BaseModel):
     token_type: str
     user_id: int
     username: str
+
+class UserProfile(BaseModel):
+    id: int
+    email: str
+    username: str
+    created_at: datetime
 
 @router.post("/signup", response_model=TokenResponse)
 def signup(request: SignupRequest, db: Session = Depends(get_db)):
@@ -115,4 +122,57 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         token_type="bearer",
         user_id=user.id,
         username=user.username
+    )
+
+# Dependency to get current user from token
+def get_current_user(
+    authorization: str = None,
+    db: Session = Depends(get_db)
+) -> User:
+    """Get current authenticated user from JWT token"""
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authorization header"
+        )
+    
+    # Extract token from "Bearer <token>"
+    try:
+        scheme, token = authorization.split()
+        if scheme.lower() != "bearer":
+            raise ValueError
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorization header"
+        )
+    
+    # Verify token
+    email = verify_token(token)
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+    
+    # Get user from database
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
+    
+    return user
+
+@router.get("/profile", response_model=UserProfile)
+def get_profile(
+    current_user: User = Depends(get_current_user),
+):
+    """Get current user profile"""
+    return UserProfile(
+        id=current_user.id,
+        email=current_user.email,
+        username=current_user.username,
+        created_at=current_user.created_at
     )

@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
-import { searchPlayers } from '../services/backendApi'
+import { searchPlayers, getCurrentUser, logout } from '../services/backendApi'
 import './Layout.css'
 
 const LOGO_URL = 'https://res.cloudinary.com/dv3eeuy4b/image/upload/v1778557328/LOGO_umlvbk.png'
@@ -17,13 +17,27 @@ function handleAvatarError(e, player, size = 64) {
   e.currentTarget.src = `https://ui-avatars.com/api/?name=${name}&background=3d1f6e&color=c4a8ff&bold=true&size=${size}&font-size=0.38`
 }
 
+function userAvatarUrl(fullName, size = 48) {
+  const name = encodeURIComponent(fullName || 'User')
+  return `https://ui-avatars.com/api/?name=${name}&background=1d42ba&color=fff&bold=true&size=${size}`
+}
+
 export default function Layout({ children }) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [players, setPlayers] = useState([])
   const [searchLoading, setSearchLoading] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [user, setUser] = useState(null)
   const dropdownRef = useRef(null)
+  const userMenuRef = useRef(null)
+
+  // Get user info on mount
+  useEffect(() => {
+    const currentUser = getCurrentUser()
+    setUser(currentUser)
+  }, [])
 
   // Debounced global player search
   useEffect(() => {
@@ -51,6 +65,9 @@ export default function Layout({ children }) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setShowDropdown(false)
       }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setShowUserMenu(false)
+      }
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -60,6 +77,12 @@ export default function Layout({ children }) {
     setShowDropdown(false)
     setSearchQuery('')
     navigate(`/players?highlight=${player.id}`)
+  }
+
+  function handleLogout() {
+    logout()
+    setShowUserMenu(false)
+    navigate('/login')
   }
 
   return (
@@ -133,8 +156,63 @@ export default function Layout({ children }) {
               </div>
             )}
           </div>
-          <div className="layout-user">
-            <div className="layout-avatar">👤</div>
+          <div className="layout-user" ref={userMenuRef}>
+            {user && (
+              <>
+                <div 
+                  className="layout-user-info"
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}
+                >
+                  <img 
+                    src={userAvatarUrl(user.fullName)} 
+                    alt="User avatar"
+                    className="layout-avatar"
+                    style={{ width: 40, height: 40, borderRadius: '50%', cursor: 'pointer' }}
+                  />
+                  <span style={{ color: '#c8d4e8', fontWeight: 600, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {user.fullName}
+                  </span>
+                </div>
+                {showUserMenu && (
+                  <div 
+                    className="layout-user-dropdown"
+                    style={{
+                      position: 'absolute',
+                      top: '60px',
+                      right: '20px',
+                      background: 'rgba(13, 27, 42, 0.95)',
+                      border: '1px solid rgba(29, 66, 186, 0.3)',
+                      borderRadius: '8px',
+                      minWidth: '160px',
+                      zIndex: 1000,
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                    }}
+                  >
+                    <button
+                      onClick={handleLogout}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        background: 'none',
+                        border: 'none',
+                        color: '#ff6b6b',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: '14px',
+                        transition: 'background-color 0.2s ease',
+                        borderRadius: '8px'
+                      }}
+                      onMouseEnter={e => e.target.style.backgroundColor = 'rgba(255, 107, 107, 0.1)'}
+                      onMouseLeave={e => e.target.style.backgroundColor = 'transparent'}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </header>
 

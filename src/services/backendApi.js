@@ -4,6 +4,7 @@
  */
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api'
+const BACKEND_ROOT = import.meta.env.VITE_BACKEND_URL?.replace('/api', '') || 'http://localhost:8000'
 
 // Request timeout
 const TIMEOUT = 10000 // 10 seconds
@@ -31,6 +32,161 @@ async function backendFetch(path, options = {}) {
     return res.json()
   } finally {
     clearTimeout(timeoutId)
+  }
+}
+
+// Helper for auth endpoints (different base URL)
+async function authFetch(path, options = {}) {
+  const url = `${BACKEND_ROOT}${path}`
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT)
+
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    })
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      throw new Error(`Auth ${res.status}: ${text || res.statusText}`)
+    }
+
+    return res.json()
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+/**
+ * User signup - creates account and returns JWT token
+ */
+export async function signup(email, fullName, password) {
+  try {
+    const data = await authFetch('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({ email, username: fullName, password }),
+    })
+    
+    // Store token and user info in localStorage
+    if (data.access_token) {
+      localStorage.setItem('token', data.access_token)
+      localStorage.setItem('user', JSON.stringify({
+        id: data.user_id,
+        username: data.username,
+        fullName: fullName,
+        email: email,
+      }))
+    }
+    
+    return data
+  } catch (err) {
+    throw new Error(`Signup failed: ${err.message}`)
+  }
+}
+
+/**
+ * User login - returns JWT token
+ */
+export async function login(email, password) {
+  try {
+    const data = await authFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    })
+    
+    // Store token and user info in localStorage
+    if (data.access_token) {
+      localStorage.setItem('token', data.access_token)
+      // Use username as full name since that's what was stored during signup
+      localStorage.setItem('user', JSON.stringify({
+        id: data.user_id,
+        username: data.username,
+        fullName: data.username,
+        email: email,
+      }))
+    }
+    
+    return data
+  } catch (err) {
+    throw new Error(`Login failed: ${err.message}`)
+  }
+}
+
+/**
+ * Logout - clears stored token and user data
+ */
+export function logout() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+}
+
+/**
+ * Check if user is authenticated
+ */
+export function isAuthenticated() {
+  return !!localStorage.getItem('token')
+}
+
+/**
+ * Validate and restore session from localStorage
+ */
+export async function validateSession() {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      return null
+    }
+    
+    // Try to fetch user profile to validate token
+    const user = await getUserProfile()
+    return user
+  } catch (err) {
+    // Token is invalid, clear it
+    logout()
+    return null
+  }
+}
+
+/**
+ * Get current logged-in user
+ */
+export function getCurrentUser() {
+  const user = localStorage.getItem('user')
+  return user ? JSON.parse(user) : null
+}
+
+/**
+ * Get auth token
+ */
+export function getToken() {
+  return localStorage.getItem('token')
+}
+
+/**
+ * Fetch current user profile from backend
+ */
+export async function getUserProfile() {
+  try {
+    const token = getToken()
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+
+    const data = await authFetch('/auth/profile', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+
+    return data
+  } catch (err) {
+    throw new Error(`Failed to fetch profile: ${err.message}`)
   }
 }
 
